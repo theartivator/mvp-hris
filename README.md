@@ -26,6 +26,12 @@ React + Vite (PWA) + Supabase (Postgres + Auth + RLS), deploy ke Vercel.
 
 ## 1. Setup Supabase
 
+> Project Supabase untuk repo ini **sudah dibuat & migration sudah dijalankan**:
+> project `pwa-hris` (region `ap-southeast-1`, ref `zffoxgmfbfknnsflvpxy`) di organisasi
+> `theartivator's`. Ambil `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` dari
+> Supabase Dashboard project tersebut > **Project Settings > API**. Langkah di
+> bawah ini untuk referensi bila suatu saat perlu deploy ulang dari nol.
+
 1. Buat project baru di [supabase.com](https://supabase.com) (catat region terdekat, mis. Singapore).
 2. Buka **SQL Editor**, jalankan seluruh isi `supabase/migrations/0001_init.sql`.
    - Atau via Supabase CLI: `supabase link --project-ref <project-ref>` lalu `supabase db push`.
@@ -63,6 +69,8 @@ Jangan hanya percaya UI yang menyembunyikan menu. Uji langsung lewat akun berbed
    - SPV/Manager mengajukan sendiri → hanya 1 level approval.
    - Direktur mengajukan → langsung `approved`.
 3. Cek juga bahwa approver **tidak bisa** meng-update pengajuan yang bukan gilirannya (mis. approver2 mencoba approve saat status masih `pending_approval1` harus ditolak RLS).
+
+> **Sudah diverifikasi end-to-end** langsung di project `pwa-hris` (bukan hanya baca kode) dengan 5 akun uji (intern, staff, spv, manager, direktur) yang dibuat & dihapus lagi setelah selesai — semua 12 skenario di atas (termasuk intern & volunteer, staff→spv→manager, reject di approval1, spv/manager self-submit 1 level, direktur auto-approve, approver bertindak di luar gilirannya, isolasi SELECT antar user) lulus. Proses ini juga menemukan bug nyata: policy `profiles_select_self_atasan_bawahan` awalnya memicu *infinite recursion* karena melakukan subquery ke `profiles` di dalam policy `profiles` itu sendiri — sudah diperbaiki dengan fungsi `SECURITY DEFINER` `current_user_profile()` (lihat `supabase/migrations/0001_init.sql`) yang membaca profil auth.uid() sendiri tanpa memicu ulang RLS.
 
 ## 4. Belum dibuat (sesuai batasan MVP, sengaja ditunda)
 

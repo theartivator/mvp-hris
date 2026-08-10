@@ -263,6 +263,40 @@ create trigger trg_validate_pengajuan_update
   before update on public.pengajuan
   for each row execute function public.validate_pengajuan_update();
 
+-- Fungsi-fungsi di atas hanya boleh dipanggil oleh trigger (mengandalkan
+-- NEW/OLD/auth.uid() dalam konteks statement DML), bukan dipanggil langsung
+-- lewat PostgREST RPC.
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.set_pengajuan_approval() from public, anon, authenticated;
+revoke execute on function public.validate_pengajuan_update() from public, anon, authenticated;
+
+-- ----------------------------------------------------------------------------
+-- Helper: memutus rekursi RLS pada profiles
+-- ----------------------------------------------------------------------------
+-- Policy select di bawah maupun policy insert pengajuan perlu tahu role &
+-- atasan dari PEMANGGIL SENDIRI. Melakukan subquery langsung ke
+-- public.profiles di dalam policy profiles akan memicu ulang RLS pada tabel
+-- yang sama -> Postgres menolak dengan "infinite recursion detected in
+-- policy for relation profiles". Pola resmi Supabase untuk memutusnya:
+-- baca via fungsi SECURITY DEFINER (berjalan sebagai owner tabel sehingga
+-- RLS tidak berlaku untuk query di dalamnya). Fungsi ini hanya pernah
+-- mengembalikan baris milik auth.uid() sendiri, jadi aman diekspos ke role
+-- authenticated.
+create or replace function public.current_user_profile()
+returns table (role text, atasan_level1_id uuid, atasan_level2_id uuid)
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select p.role, p.atasan_level1_id, p.atasan_level2_id
+    from public.profiles p
+   where p.id = auth.uid()
+$$;
+
+revoke execute on function public.current_user_profile() from public, anon;
+grant execute on function public.current_user_profile() to authenticated;
+
 -- ----------------------------------------------------------------------------
 -- Row Level Security
 -- ----------------------------------------------------------------------------
@@ -281,9 +315,9 @@ create policy "profiles_select_self_atasan_bawahan"
   using (
     id = auth.uid()
     or id in (
-      select p.atasan_level1_id from public.profiles p where p.id = auth.uid()
+      select atasan_level1_id from public.current_user_profile()
       union
-      select p.atasan_level2_id from public.profiles p where p.id = auth.uid()
+      select atasan_level2_id from public.current_user_profile()
     )
     or auth.uid() in (atasan_level1_id, atasan_level2_id)
   );
@@ -312,7 +346,7 @@ create policy "pengajuan_insert_not_intern_volunteer"
   to authenticated
   with check (
     user_id = auth.uid()
-    and (select role from public.profiles where id = auth.uid()) not in ('intern', 'volunteer')
+    and (select role from public.current_user_profile()) not in ('intern', 'volunteer')
   );
 
 -- select: pemohon sendiri, atau approver yang ditunjuk (di step manapun agar
