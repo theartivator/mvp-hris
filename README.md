@@ -26,11 +26,13 @@ React + Vite (PWA) + Supabase (Postgres + Auth + RLS), deploy ke Vercel.
 
 ## 1. Setup Supabase
 
-> Project Supabase untuk repo ini **sudah dibuat & migration sudah dijalankan**:
-> project `pwa-hris` (region `ap-southeast-1`, ref `zffoxgmfbfknnsflvpxy`) di organisasi
-> `theartivator's`. Ambil `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` dari
-> Supabase Dashboard project tersebut > **Project Settings > API**. Langkah di
-> bawah ini untuk referensi bila suatu saat perlu deploy ulang dari nol.
+> Repo `mvp-hris` ini memakai project Supabase yang sama dengan yang sudah
+> dibuat & di-migrate sebelumnya (bukan project baru, karena akun sudah kena
+> limit 2 project gratis): project `pwa-hris` (region `ap-southeast-1`, ref
+> `zffoxgmfbfknnsflvpxy`) di organisasi `theartivator's`. Ambil
+> `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` dari Supabase Dashboard
+> project tersebut > **Project Settings > API**. Langkah di bawah ini untuk
+> referensi bila suatu saat perlu project Supabase terpisah dari nol.
 
 1. Buat project baru di [supabase.com](https://supabase.com) (catat region terdekat, mis. Singapore).
 2. Buka **SQL Editor**, jalankan seluruh isi `supabase/migrations/0001_init.sql`.
@@ -80,11 +82,6 @@ Jangan hanya percaya UI yang menyembunyikan menu. Uji langsung lewat akun berbed
 - Offline-first / background sync
 
 ## 5. Deploy ke Vercel
-
-> Sudah live di **https://pwa-hris-5guu.vercel.app** (project Vercel `pwa-hris-5guu`,
-> terhubung ke `theartivator/pwa-hris-dev` branch `main`). Preview untuk branch
-> `demo/no-database` (mode tanpa database, lihat catatan di branch tsb) juga
-> otomatis ter-deploy dari project yang sama tiap kali branch itu di-push.
 
 1. Push repo ini ke GitHub.
 2. Di [vercel.com](https://vercel.com), **Add New Project** → import repo GitHub tersebut.
