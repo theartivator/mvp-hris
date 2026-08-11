@@ -4,6 +4,15 @@ import { useAuth } from '../context/AuthContext'
 import { tanggalWIB, formatTanggalWIB, formatJamWIB } from '../lib/waktu'
 import { IconFingerprint, IconCheckCircle } from '../lib/icons'
 
+function timeHHMM(iso) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleTimeString('en-GB', {
+    timeZone: 'Asia/Jakarta',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export default function Absen() {
   const { user } = useAuth()
   const [today, setToday] = useState(null)
@@ -11,6 +20,10 @@ export default function Absen() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [editing, setEditing] = useState(false)
+  const [editMasuk, setEditMasuk] = useState('')
+  const [editKeluar, setEditKeluar] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -71,6 +84,43 @@ export default function Absen() {
     await load()
   }
 
+  function openEdit() {
+    setEditMasuk(timeHHMM(today?.jam_masuk))
+    setEditKeluar(timeHHMM(today?.jam_keluar))
+    setEditing(true)
+    setError('')
+  }
+
+  async function saveEdit() {
+    if (!today || !editMasuk) return
+    setSavingEdit(true)
+    setError('')
+    const tgl = tanggalWIB()
+    const jamMasuk = `${tgl}T${editMasuk}:00+07:00`
+    const jamKeluar = editKeluar ? `${tgl}T${editKeluar}:00+07:00` : null
+
+    const { error } = await supabase
+      .from('absensi')
+      .update({ jam_masuk: jamMasuk, jam_keluar: jamKeluar })
+      .eq('id', today.id)
+
+    if (!error) {
+      await supabase.from('log').insert({
+        user_id: user.id,
+        action: 'edit_absen',
+        detail: { tanggal: tgl, jam_masuk: jamMasuk, jam_keluar: jamKeluar },
+      })
+    }
+
+    setSavingEdit(false)
+    if (error) {
+      setError(error.message)
+    } else {
+      setEditing(false)
+      await load()
+    }
+  }
+
   const selesai = !!today?.jam_keluar
   const label = !today ? 'Absen Masuk' : selesai ? 'Selesai Hari Ini' : 'Absen Keluar'
 
@@ -116,7 +166,56 @@ export default function Absen() {
           </div>
         </div>
 
-        {error && <p className="form-error">{error}</p>}
+        {today && !editing && (
+          <button
+            type="button"
+            className="btn-outline"
+            onClick={openEdit}
+            style={{ width: '100%', marginTop: '0.8rem' }}
+          >
+            Edit Waktu
+          </button>
+        )}
+
+        {editing && (
+          <div style={{ marginTop: '0.8rem' }}>
+            <div className="form-grid">
+              <label>
+                Masuk
+                <input
+                  type="time"
+                  required
+                  value={editMasuk}
+                  onChange={(e) => setEditMasuk(e.target.value)}
+                />
+              </label>
+              <label>
+                Keluar
+                <input
+                  type="time"
+                  value={editKeluar}
+                  onChange={(e) => setEditKeluar(e.target.value)}
+                />
+              </label>
+            </div>
+            <div className="btn-row" style={{ marginTop: '0.8rem' }}>
+              <button type="button" onClick={saveEdit} disabled={savingEdit || !editMasuk} style={{ flex: 1 }}>
+                {savingEdit ? 'Menyimpan...' : 'Simpan'}
+              </button>
+              <button
+                type="button"
+                className="btn-outline"
+                onClick={() => setEditing(false)}
+                disabled={savingEdit}
+                style={{ flex: 1 }}
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        )}
+
+        {error && <p className="form-error" style={{ marginTop: '0.8rem' }}>{error}</p>}
       </div>
 
       <h2>Riwayat Absen</h2>
