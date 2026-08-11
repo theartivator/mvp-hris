@@ -4,7 +4,7 @@ React + Vite (PWA) + Supabase (Postgres + Auth + RLS), deploy ke Vercel.
 
 ## Fitur
 
-- Login/register (Supabase Auth, email + password)
+- Login pakai **username + password** (Register tetap minta email untuk Supabase Auth di baliknya; login page resolve username → email lewat RPC `email_for_username` sebelum panggil `signInWithPassword`, lihat `supabase/migrations/0002_username_login.sql`)
 - Absen masuk/keluar (timestamp WIB) + riwayat absen pribadi
 - Pengajuan cuti/lembur dengan alur approval bertingkat sesuai role
 - Halaman Approval untuk SPV/Manager/Direktur

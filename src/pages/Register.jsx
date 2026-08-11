@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 export default function Register() {
   const { session } = useAuth()
   const [nama, setNama] = useState('')
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -24,7 +25,7 @@ export default function Register() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { nama } },
+      options: { data: { nama, username } },
     })
     setLoading(false)
     if (error) {
@@ -33,7 +34,7 @@ export default function Register() {
     }
     if (!data.session) {
       setInfo(
-        'Registrasi berhasil. Silakan cek email untuk konfirmasi sebelum masuk. Role akun Anda akan diset oleh admin/HR.'
+        'Registrasi berhasil. Silakan cek email untuk konfirmasi, lalu masuk pakai username & password. Role akun Anda akan diset oleh admin/HR.'
       )
     }
   }
@@ -45,6 +46,18 @@ export default function Register() {
         <label>
           Nama
           <input type="text" required value={nama} onChange={(e) => setNama(e.target.value)} />
+        </label>
+        <label>
+          Username
+          <input
+            type="text"
+            required
+            pattern="[a-zA-Z0-9_.]+"
+            title="Huruf, angka, titik, dan garis bawah saja"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
+          />
         </label>
         <label>
           Email

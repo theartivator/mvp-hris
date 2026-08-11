@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 export default function Login() {
   const { session } = useAuth()
   const location = useLocation()
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -19,9 +19,20 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setLoading(true)
+
+    const { data: email, error: lookupError } = await supabase.rpc('email_for_username', {
+      p_username: username,
+    })
+
+    if (lookupError || !email) {
+      setLoading(false)
+      setError('Username atau password salah.')
+      return
+    }
+
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
-    if (error) setError(error.message)
+    if (error) setError('Username atau password salah.')
   }
 
   return (
@@ -29,13 +40,13 @@ export default function Login() {
       <form className="auth-card" onSubmit={handleSubmit}>
         <h1>Masuk</h1>
         <label>
-          Email
+          Username
           <input
-            type="email"
+            type="text"
             required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
           />
         </label>
         <label>
