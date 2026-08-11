@@ -81,6 +81,11 @@ Jangan hanya percaya UI yang menyembunyikan menu. Uji langsung lewat akun berbed
 
 ## 5. Deploy ke Vercel
 
+> Sudah live di **https://pwa-hris-5guu.vercel.app** (project Vercel `pwa-hris-5guu`,
+> terhubung ke `theartivator/pwa-hris-dev` branch `main`). Preview untuk branch
+> `demo/no-database` (mode tanpa database, lihat catatan di branch tsb) juga
+> otomatis ter-deploy dari project yang sama tiap kali branch itu di-push.
+
 1. Push repo ini ke GitHub.
 2. Di [vercel.com](https://vercel.com), **Add New Project** → import repo GitHub tersebut.
 3. Framework preset: **Vite**. Build command `npm run build`, output directory `dist` (biasanya terdeteksi otomatis).
