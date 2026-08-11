@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { tanggalWIB, formatTanggalWIB, formatJamWIB } from '../lib/waktu'
+import { IconFingerprint, IconCheckCircle } from '../lib/icons'
 
 export default function Absen() {
   const { user } = useAuth()
@@ -37,77 +38,85 @@ export default function Absen() {
     load()
   }, [load])
 
-  async function absenMasuk() {
+  async function handleCircleTap() {
+    if (busy) return
     setBusy(true)
     setError('')
     const now = new Date().toISOString()
-    const { error } = await supabase
-      .from('absensi')
-      .insert({ user_id: user.id, tanggal: tanggalWIB(), jam_masuk: now })
-    if (!error) {
-      await supabase
-        .from('log')
-        .insert({ user_id: user.id, action: 'absen_masuk', detail: { tanggal: tanggalWIB() } })
+
+    if (!today) {
+      const { error } = await supabase
+        .from('absensi')
+        .insert({ user_id: user.id, tanggal: tanggalWIB(), jam_masuk: now })
+      if (!error) {
+        await supabase
+          .from('log')
+          .insert({ user_id: user.id, action: 'absen_masuk', detail: { tanggal: tanggalWIB() } })
+      }
+      if (error) setError(error.message)
+    } else if (!today.jam_keluar) {
+      const { error } = await supabase
+        .from('absensi')
+        .update({ jam_keluar: now })
+        .eq('id', today.id)
+      if (!error) {
+        await supabase
+          .from('log')
+          .insert({ user_id: user.id, action: 'absen_keluar', detail: { tanggal: tanggalWIB() } })
+      }
+      if (error) setError(error.message)
     }
+
     setBusy(false)
-    if (error) {
-      setError(error.message)
-    } else {
-      await load()
-    }
+    await load()
   }
 
-  async function absenKeluar() {
-    if (!today) return
-    setBusy(true)
-    setError('')
-    const now = new Date().toISOString()
-    const { error } = await supabase
-      .from('absensi')
-      .update({ jam_keluar: now })
-      .eq('id', today.id)
-    if (!error) {
-      await supabase
-        .from('log')
-        .insert({ user_id: user.id, action: 'absen_keluar', detail: { tanggal: tanggalWIB() } })
-    }
-    setBusy(false)
-    if (error) {
-      setError(error.message)
-    } else {
-      await load()
-    }
-  }
+  const selesai = !!today?.jam_keluar
+  const label = !today ? 'Absen Masuk' : selesai ? 'Selesai Hari Ini' : 'Absen Keluar'
 
   if (loading) return <div className="page-loading">Memuat...</div>
 
   return (
     <div className="page">
-      <h1>Absen</h1>
       <div className="card">
-        <p className="muted">{formatTanggalWIB(tanggalWIB())}</p>
-        <div className="absen-status">
+        <div className="card-row-title">
+          <div className="card-icon">
+            <IconFingerprint />
+          </div>
           <div>
+            <div className="card-title">Kehadiran</div>
+            <div className="card-subtitle">{formatTanggalWIB(tanggalWIB())}</div>
+          </div>
+        </div>
+
+        <div className="absen-circle-wrap">
+          <button
+            onClick={handleCircleTap}
+            disabled={busy || selesai}
+            style={{ padding: 0, borderRadius: '50%', background: 'transparent' }}
+          >
+            <div className="absen-circle">
+              {selesai ? <IconCheckCircle /> : <IconFingerprint />}
+            </div>
+          </button>
+        </div>
+
+        <p className="muted" style={{ textAlign: 'center', marginTop: 0 }}>
+          {label}
+        </p>
+
+        <div className="absen-times">
+          <div className="absen-time-box">
             <span className="label">Masuk</span>
             <span className="value">{formatJamWIB(today?.jam_masuk)}</span>
           </div>
-          <div>
+          <div className="absen-time-box">
             <span className="label">Keluar</span>
             <span className="value">{formatJamWIB(today?.jam_keluar)}</span>
           </div>
         </div>
+
         {error && <p className="form-error">{error}</p>}
-        <div className="btn-row">
-          <button onClick={absenMasuk} disabled={busy || !!today}>
-            Absen Masuk
-          </button>
-          <button
-            onClick={absenKeluar}
-            disabled={busy || !today || !!today?.jam_keluar}
-          >
-            Absen Keluar
-          </button>
-        </div>
       </div>
 
       <h2>Riwayat Absen</h2>

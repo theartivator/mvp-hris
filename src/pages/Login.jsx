@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import { IconLock } from '../lib/icons'
 
 export default function Login() {
   const { session } = useAuth()
@@ -38,6 +39,9 @@ export default function Login() {
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
+        <div className="card-icon" style={{ width: 52, height: 52 }}>
+          <IconLock style={{ width: 24, height: 24 }} />
+        </div>
         <h1>Masuk</h1>
         <label>
           Username

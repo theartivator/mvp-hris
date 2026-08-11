@@ -7,6 +7,7 @@ import Register from './pages/Register'
 import Absen from './pages/Absen'
 import Pengajuan from './pages/Pengajuan'
 import Approval from './pages/Approval'
+import Lainnya from './pages/Lainnya'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/absen" element={<Absen />} />
             <Route path="/pengajuan" element={<Pengajuan />} />
             <Route path="/approval" element={<Approval />} />
+            <Route path="/lainnya" element={<Lainnya />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

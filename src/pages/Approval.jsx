@@ -62,63 +62,49 @@ export default function Approval() {
     <RoleGuard allowed={bisaApprove(role)}>
       <div className="page">
         <h1>Approval Pengajuan</h1>
-        <div className="card">
-          {loading ? (
-            <p className="muted">Memuat...</p>
-          ) : error ? (
+        {error && (
+          <div className="card">
             <p className="form-error">{error}</p>
-          ) : items.length === 0 ? (
+          </div>
+        )}
+        {loading ? (
+          <p className="muted">Memuat...</p>
+        ) : items.length === 0 ? (
+          <div className="card">
             <p className="muted">Tidak ada pengajuan menunggu persetujuan Anda.</p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Pemohon</th>
-                  <th>Jenis</th>
-                  <th>Tanggal</th>
-                  <th>Alasan</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      {row.pemohon?.nama} <span className="muted">({row.pemohon?.role})</span>
-                    </td>
-                    <td>
-                      {row.jenis}
-                      {row.jenis === 'lembur' ? ` (${row.jam_lembur} jam)` : ''}
-                    </td>
-                    <td>
-                      {formatTanggalWIB(row.tanggal_mulai)} - {formatTanggalWIB(row.tanggal_selesai)}
-                    </td>
-                    <td>{row.alasan}</td>
-                    <td>
-                      <span className={`badge badge-${row.status}`}>{STATUS_LABEL[row.status]}</span>
-                    </td>
-                    <td className="btn-row">
-                      <button
-                        onClick={() => putuskan(row, 'approved')}
-                        disabled={busyId === row.id}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => putuskan(row, 'rejected')}
-                        disabled={busyId === row.id}
-                        className="btn-danger"
-                      >
-                        Reject
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+          </div>
+        ) : (
+          items.map((row) => (
+            <div className="card" key={row.id}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.6rem' }}>
+                <div>
+                  <div className="card-title">{row.pemohon?.nama}</div>
+                  <div className="card-subtitle" style={{ textTransform: 'capitalize' }}>
+                    {row.pemohon?.role} · {row.jenis}
+                    {row.jenis === 'lembur' ? ` · ${row.jam_lembur} jam` : ''}
+                  </div>
+                </div>
+                <span className={`badge badge-${row.status}`}>{STATUS_LABEL[row.status]}</span>
+              </div>
+              <p className="muted" style={{ margin: '0.3rem 0' }}>
+                {formatTanggalWIB(row.tanggal_mulai)} - {formatTanggalWIB(row.tanggal_selesai)}
+              </p>
+              <p style={{ margin: '0.3rem 0 1rem', fontSize: '0.9rem' }}>{row.alasan}</p>
+              <div className="btn-row">
+                <button onClick={() => putuskan(row, 'approved')} disabled={busyId === row.id}>
+                  Approve
+                </button>
+                <button
+                  onClick={() => putuskan(row, 'rejected')}
+                  disabled={busyId === row.id}
+                  className="btn-danger"
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </RoleGuard>
   )
