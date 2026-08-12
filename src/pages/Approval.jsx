@@ -81,15 +81,17 @@ export default function Approval() {
                   <div className="card-title">{row.pemohon?.nama}</div>
                   <div className="card-subtitle" style={{ textTransform: 'capitalize' }}>
                     {row.pemohon?.role} · {row.jenis}
-                    {row.jenis === 'lembur' ? ` · ${row.jam_lembur} jam` : ''}
+                    {row.jenis === 'lembur' ? ` · ${row.jam_mulai?.slice(0, 5)}-${row.jam_selesai?.slice(0, 5)}` : ''}
                   </div>
                 </div>
                 <span className={`badge badge-${row.status}`}>{STATUS_LABEL[row.status]}</span>
               </div>
               <p className="muted" style={{ margin: '0.3rem 0' }}>
-                {formatTanggalWIB(row.tanggal_mulai)} - {formatTanggalWIB(row.tanggal_selesai)}
+                {row.jenis === 'lembur'
+                  ? formatTanggalWIB(row.tanggal_mulai)
+                  : `${formatTanggalWIB(row.tanggal_mulai)} - ${formatTanggalWIB(row.tanggal_selesai)}`}
               </p>
-              <p style={{ margin: '0.3rem 0 1rem', fontSize: '0.9rem' }}>{row.alasan}</p>
+              {row.alasan && <p style={{ margin: '0.3rem 0 1rem', fontSize: '0.9rem' }}>{row.alasan}</p>}
               <div className="btn-row">
                 <button onClick={() => putuskan(row, 'approved')} disabled={busyId === row.id}>
                   Approve

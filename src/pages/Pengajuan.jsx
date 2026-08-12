@@ -5,12 +5,17 @@ import { bisaMengajukan, STATUS_LABEL } from '../lib/roles'
 import RoleGuard from '../components/RoleGuard'
 import { formatTanggalWIB } from '../lib/waktu'
 
-const KOSONG = {
-  jenis: 'cuti',
+const CUTI_KOSONG = {
   tanggal_mulai: '',
   tanggal_selesai: '',
-  jam_lembur: '',
   alasan: '',
+}
+
+const LEMBUR_KOSONG = {
+  tanggal: '',
+  jam_mulai: '',
+  jam_selesai: '',
+  keterangan: '',
 }
 
 function Stepper({ status, punyaApprover2 }) {
@@ -49,7 +54,9 @@ function Stepper({ status, punyaApprover2 }) {
 
 export default function Pengajuan() {
   const { user, role } = useAuth()
-  const [form, setForm] = useState(KOSONG)
+  const [tab, setTab] = useState('cuti')
+  const [cutiForm, setCutiForm] = useState(CUTI_KOSONG)
+  const [lemburForm, setLemburForm] = useState(LEMBUR_KOSONG)
   const [riwayat, setRiwayat] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -72,8 +79,18 @@ export default function Pengajuan() {
     else setLoading(false)
   }, [load, role])
 
-  function updateField(field, value) {
-    setForm((f) => ({ ...f, [field]: value }))
+  function updateCuti(field, value) {
+    setCutiForm((f) => ({ ...f, [field]: value }))
+  }
+
+  function updateLembur(field, value) {
+    setLemburForm((f) => ({ ...f, [field]: value }))
+  }
+
+  function switchTab(t) {
+    setTab(t)
+    setError('')
+    setInfo('')
   }
 
   async function handleSubmit(e) {
@@ -82,14 +99,24 @@ export default function Pengajuan() {
     setInfo('')
     setSubmitting(true)
 
-    const payload = {
-      user_id: user.id,
-      jenis: form.jenis,
-      tanggal_mulai: form.tanggal_mulai,
-      tanggal_selesai: form.tanggal_selesai,
-      jam_lembur: form.jenis === 'lembur' ? Number(form.jam_lembur) : null,
-      alasan: form.alasan,
-    }
+    const payload =
+      tab === 'cuti'
+        ? {
+            user_id: user.id,
+            jenis: 'cuti',
+            tanggal_mulai: cutiForm.tanggal_mulai,
+            tanggal_selesai: cutiForm.tanggal_selesai,
+            alasan: cutiForm.alasan,
+          }
+        : {
+            user_id: user.id,
+            jenis: 'lembur',
+            tanggal_mulai: lemburForm.tanggal,
+            tanggal_selesai: lemburForm.tanggal,
+            jam_mulai: lemburForm.jam_mulai,
+            jam_selesai: lemburForm.jam_selesai,
+            alasan: lemburForm.keterangan || null,
+          }
 
     const { error } = await supabase.from('pengajuan').insert(payload)
     setSubmitting(false)
@@ -101,7 +128,8 @@ export default function Pengajuan() {
       .from('log')
       .insert({ user_id: user.id, action: 'ajukan_pengajuan', detail: payload })
     setInfo('Pengajuan berhasil dikirim.')
-    setForm(KOSONG)
+    if (tab === 'cuti') setCutiForm(CUTI_KOSONG)
+    else setLemburForm(LEMBUR_KOSONG)
     load()
   }
 
@@ -109,75 +137,109 @@ export default function Pengajuan() {
     <RoleGuard allowed={bisaMengajukan(role)}>
       <div className="page">
         <h1>Ajukan Cuti / Lembur</h1>
-        <form className="card" onSubmit={handleSubmit}>
-          <label className="muted" style={{ fontSize: '0.8rem', display: 'block', marginBottom: '0.5rem' }}>
-            Jenis
-          </label>
-          <div className="pill-group" style={{ marginBottom: '1rem' }}>
-            <div
-              className={`pill-option${form.jenis === 'cuti' ? ' selected' : ''}`}
-              onClick={() => updateField('jenis', 'cuti')}
-            >
-              Cuti
-            </div>
-            <div
-              className={`pill-option${form.jenis === 'lembur' ? ' selected' : ''}`}
-              onClick={() => updateField('jenis', 'lembur')}
-            >
-              Lembur
-            </div>
-          </div>
 
-          <div className="form-grid">
-            <label>
-              Mulai
-              <input
-                type="date"
-                required
-                value={form.tanggal_mulai}
-                onChange={(e) => updateField('tanggal_mulai', e.target.value)}
-              />
-            </label>
-            <label>
-              Selesai
-              <input
-                type="date"
-                required
-                value={form.tanggal_selesai}
-                onChange={(e) => updateField('tanggal_selesai', e.target.value)}
-              />
-            </label>
-            {form.jenis === 'lembur' && (
-              <label className="full-width">
-                Jam Lembur
+        <div className="pill-group" style={{ marginBottom: '1rem' }}>
+          <div
+            className={`pill-option${tab === 'cuti' ? ' selected' : ''}`}
+            onClick={() => switchTab('cuti')}
+          >
+            Cuti
+          </div>
+          <div
+            className={`pill-option${tab === 'lembur' ? ' selected' : ''}`}
+            onClick={() => switchTab('lembur')}
+          >
+            Lembur
+          </div>
+        </div>
+
+        {tab === 'cuti' ? (
+          <form className="card" onSubmit={handleSubmit}>
+            <div className="form-grid">
+              <label>
+                Mulai
                 <input
-                  type="number"
-                  min="0"
-                  step="0.5"
+                  type="date"
                   required
-                  value={form.jam_lembur}
-                  onChange={(e) => updateField('jam_lembur', e.target.value)}
+                  value={cutiForm.tanggal_mulai}
+                  onChange={(e) => updateCuti('tanggal_mulai', e.target.value)}
                 />
               </label>
-            )}
-            <label className="full-width">
-              Alasan
-              <textarea
-                required
-                rows={3}
-                placeholder="Contoh: Keperluan keluarga di luar kota."
-                value={form.alasan}
-                onChange={(e) => updateField('alasan', e.target.value)}
-              />
-            </label>
-          </div>
+              <label>
+                Selesai
+                <input
+                  type="date"
+                  required
+                  value={cutiForm.tanggal_selesai}
+                  onChange={(e) => updateCuti('tanggal_selesai', e.target.value)}
+                />
+              </label>
+              <label className="full-width">
+                Alasan
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Contoh: Keperluan keluarga di luar kota."
+                  value={cutiForm.alasan}
+                  onChange={(e) => updateCuti('alasan', e.target.value)}
+                />
+              </label>
+            </div>
 
-          {error && <p className="form-error" style={{ marginTop: '0.8rem' }}>{error}</p>}
-          {info && <p className="form-info" style={{ marginTop: '0.8rem' }}>{info}</p>}
-          <button type="submit" disabled={submitting} style={{ width: '100%', marginTop: '1.2rem' }}>
-            {submitting ? 'Mengirim...' : 'Kirim Pengajuan'}
-          </button>
-        </form>
+            {error && <p className="form-error" style={{ marginTop: '0.8rem' }}>{error}</p>}
+            {info && <p className="form-info" style={{ marginTop: '0.8rem' }}>{info}</p>}
+            <button type="submit" disabled={submitting} style={{ width: '100%', marginTop: '1.2rem' }}>
+              {submitting ? 'Mengirim...' : 'Kirim Pengajuan'}
+            </button>
+          </form>
+        ) : (
+          <form className="card" onSubmit={handleSubmit}>
+            <div className="form-grid">
+              <label className="full-width">
+                Tanggal
+                <input
+                  type="date"
+                  required
+                  value={lemburForm.tanggal}
+                  onChange={(e) => updateLembur('tanggal', e.target.value)}
+                />
+              </label>
+              <label>
+                Jam Mulai
+                <input
+                  type="time"
+                  required
+                  value={lemburForm.jam_mulai}
+                  onChange={(e) => updateLembur('jam_mulai', e.target.value)}
+                />
+              </label>
+              <label>
+                Jam Selesai
+                <input
+                  type="time"
+                  required
+                  value={lemburForm.jam_selesai}
+                  onChange={(e) => updateLembur('jam_selesai', e.target.value)}
+                />
+              </label>
+              <label className="full-width">
+                Keterangan
+                <textarea
+                  rows={3}
+                  placeholder="Opsional"
+                  value={lemburForm.keterangan}
+                  onChange={(e) => updateLembur('keterangan', e.target.value)}
+                />
+              </label>
+            </div>
+
+            {error && <p className="form-error" style={{ marginTop: '0.8rem' }}>{error}</p>}
+            {info && <p className="form-info" style={{ marginTop: '0.8rem' }}>{info}</p>}
+            <button type="submit" disabled={submitting} style={{ width: '100%', marginTop: '1.2rem' }}>
+              {submitting ? 'Mengirim...' : 'Kirim Pengajuan'}
+            </button>
+          </form>
+        )}
 
         <h2>Status Pengajuan Saya</h2>
         {loading ? (
@@ -193,10 +255,12 @@ export default function Pengajuan() {
                 <div>
                   <div className="card-title" style={{ textTransform: 'capitalize' }}>
                     {row.jenis}
-                    {row.jenis === 'lembur' ? ` · ${row.jam_lembur} jam` : ''}
+                    {row.jenis === 'lembur' ? ` · ${row.jam_mulai?.slice(0, 5)}-${row.jam_selesai?.slice(0, 5)}` : ''}
                   </div>
                   <div className="card-subtitle">
-                    {formatTanggalWIB(row.tanggal_mulai)} - {formatTanggalWIB(row.tanggal_selesai)}
+                    {row.jenis === 'lembur'
+                      ? formatTanggalWIB(row.tanggal_mulai)
+                      : `${formatTanggalWIB(row.tanggal_mulai)} - ${formatTanggalWIB(row.tanggal_selesai)}`}
                   </div>
                 </div>
                 <span className={`badge badge-${row.status}`}>{STATUS_LABEL[row.status]}</span>

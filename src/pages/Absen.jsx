@@ -159,10 +159,20 @@ export default function Absen() {
           <div className="absen-time-box">
             <span className="label">Masuk</span>
             <span className="value">{formatJamWIB(today?.jam_masuk)}</span>
+            {today?.masuk_di_luar_jam && (
+              <span className="badge badge-pending_approval1" style={{ marginTop: '0.3rem' }}>
+                Di luar jam normal
+              </span>
+            )}
           </div>
           <div className="absen-time-box">
             <span className="label">Keluar</span>
             <span className="value">{formatJamWIB(today?.jam_keluar)}</span>
+            {today?.keluar_di_luar_jam && (
+              <span className="badge badge-pending_approval1" style={{ marginTop: '0.3rem' }}>
+                Di luar jam normal
+              </span>
+            )}
           </div>
         </div>
 
@@ -235,8 +245,14 @@ export default function Absen() {
               {riwayat.map((row) => (
                 <tr key={row.id}>
                   <td>{formatTanggalWIB(row.tanggal)}</td>
-                  <td>{formatJamWIB(row.jam_masuk)}</td>
-                  <td>{formatJamWIB(row.jam_keluar)}</td>
+                  <td>
+                    {formatJamWIB(row.jam_masuk)}
+                    {row.masuk_di_luar_jam && ' ⚠'}
+                  </td>
+                  <td>
+                    {formatJamWIB(row.jam_keluar)}
+                    {row.keluar_di_luar_jam && ' ⚠'}
+                  </td>
                 </tr>
               ))}
             </tbody>
